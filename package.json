@@ -1,0 +1,10 @@
+{
+  "name": "pizzabank-hotel-pos",
+  "version": "1.0.0",
+  "description": "Point of Sale and restaurant management system for PizzaBank Hotel",
+  "private": true,
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "license": "MIT"
+}
