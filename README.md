@@ -15,6 +15,7 @@ No build step and no backend, so it deploys to Vercel in one click.
 - **Dashboard**: today's sales, order count, average order value, 7-day chart, top items, order-type and payment split, stock alerts
 - **Menu Management**: add, edit and delete items and categories, sizes, availability toggle
 - **Inventory**: stock adjustments, low-stock and out-of-stock alerts, one-click restock
+- **Store Locator**: branch list with search, Dine-in / Takeaway / Delivery filters, open-now status, embedded map, Directions and Call buttons, add / edit / delete branches, and a "use for this counter" switch whose address and phone print on receipts
 - **Settings**: business name, address, currency, tax %, service %, delivery fee, tables, backup export and import
 - Responsive: works on desktop, tablet and phone
 

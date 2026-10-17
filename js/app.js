@@ -54,7 +54,10 @@
     trend: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
     clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
     alert: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
-    flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>'
+    flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+    pin: '<path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+    phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>',
+    navigate: '<polygon points="3 11 22 2 13 21 11 13 3 11"/>'
   };
   var ic = function (n, s) {
     s = s || 18;
@@ -65,7 +68,7 @@
   var S = load();
   var ui = {
     cat: 'all', q: '', ostatus: 'active', oq: '', odate: 'today',
-    inv: 'all', mcat: 'all', mq: '', cartOpen: false
+    inv: 'all', mcat: 'all', mq: '', cartOpen: false, brq: '', brsvc: 'all', br: ''
   };
   var cur = 'dashboard';
   var pay = null;
@@ -79,6 +82,8 @@
       var r = JSON.parse(localStorage.getItem(KEY));
       if (r && r.v === 1 && r.menu && r.orders) {
         if (!r.cart) r.cart = blankCart();
+        if (!r.branches || !r.branches.length) r.branches = defaultBranches();
+        if (!r.settings.currentBranch) r.settings.currentBranch = r.branches[0].id;
         return r;
       }
     } catch (e) { /* ignore */ }
@@ -111,9 +116,10 @@
   function seed() {
     var st = {
       v: 1, settings: clone(D.settings), categories: clone(D.categories), menu: clone(D.menu),
-      orders: [], nextOrder: 1001, cart: blankCart()
+      orders: [], nextOrder: 1001, cart: blankCart(), branches: defaultBranches()
     };
     st.orders = history(st);
+    st.settings.currentBranch = st.branches[0].id;
     st.nextOrder = st.orders.reduce(function (m, o) { return Math.max(m, o.no); }, 1000) + 1;
     return st;
   }
@@ -198,7 +204,7 @@
 
   /* ---------- chrome (sidebar + topbar) ---------- */
   var NAV = [
-    ['OPERATIONS', [['dashboard', 'Overview', 'grid'], ['pos', 'POS / New Order', 'pos'], ['orders', 'Orders', 'orders'], ['kitchen', 'Kitchen Display', 'kitchen']]],
+    ['OPERATIONS', [['dashboard', 'Overview', 'grid'], ['pos', 'POS / New Order', 'pos'], ['orders', 'Orders', 'orders'], ['kitchen', 'Kitchen Display', 'kitchen'], ['locator', 'Store Locator', 'pin']]],
     ['CATALOG & STOCK', [['menu', 'Menu Management', 'menu'], ['inventory', 'Inventory', 'inventory']]],
     ['SYSTEM', [['settings', 'Settings', 'settings']]]
   ];
@@ -207,6 +213,7 @@
     pos: ['Point of Sale', 'Dine-in, takeaway and delivery orders'],
     orders: ['Orders', 'Track, collect payment and print receipts'],
     kitchen: ['Kitchen Display', 'Live tickets for the kitchen team'],
+    locator: ['Store Locator', 'Branches, opening hours, map and directions'],
     menu: ['Menu Management', 'Items, prices, sizes and categories'],
     inventory: ['Inventory', 'Stock levels and low-stock alerts'],
     settings: ['Settings', 'Business details, taxes and data']
@@ -230,6 +237,7 @@
 
     var t = TITLES[cur];
     $('#topbar').innerHTML = '<div><h1>' + t[0] + '</h1><div class="sub">' + t[1] + '</div></div><div class="sp"></div>' +
+      '<a href="#/locator" class="pill hide-s" title="Current counter branch">' + ic('pin', 15) + esc(curBranch().name) + '</a>' +
       '<span class="pill hide-s">' + ic('clock', 15) + '<span id="clock"></span></span>' +
       '<span class="pill ok"><i class="dot"></i> Saved locally</span>';
     tick();
@@ -559,7 +567,7 @@
 
   /* ---------- receipt ---------- */
   function receiptHTML(o) {
-    var s = S.settings, r = '<div class="receipt"><div class="c"><h2>' + esc(s.name) + '</h2><div>' + esc(s.tagline) + '</div><div>' + esc(s.address) + '</div><div>Tel: ' + esc(s.phone) + '</div></div><hr>' +
+    var s = S.settings, b = curBranch(), r = '<div class="receipt"><div class="c"><h2>' + esc(s.name) + '</h2><div>' + esc(s.tagline) + '</div><div><b>' + esc(b.name) + '</b></div><div>' + esc(brAddr(b) || s.address) + '</div><div>Tel: ' + esc(b.phone || s.phone) + '</div></div><hr>' +
       '<div class="r"><span>Order #' + o.no + '</span><span>' + TYPE_LABEL[o.type] + (o.table ? ' · ' + esc(o.table) : '') + '</span></div>' +
       '<div class="r"><span>' + dateStr(o.createdAt) + '</span><span>' + timeStr(o.createdAt) + '</span></div>';
     if (o.cust && (o.cust.name || o.cust.phone)) r += '<div>Customer: ' + esc(o.cust.name) + ' ' + esc(o.cust.phone) + '</div>';
@@ -811,6 +819,105 @@
     save(); toast('Settings saved', 'ok'); rerender();
   }
 
+
+  /* ======================================================================
+     STORE LOCATOR
+     ====================================================================== */
+  function defaultBranches() {
+    return [
+      { id: 'b1', name: 'PizzaBank Hotel – Main Branch', city: 'Your City', address: 'Main Boulevard', phone: '+92 300 0000001', open: '11:00', close: '01:00', manager: 'Branch Manager', lat: '', lng: '', dine: true, take: true, deliv: true, active: true },
+      { id: 'b2', name: 'PizzaBank – City Center', city: 'Your City', address: 'City Center Plaza, Ground Floor', phone: '+92 300 0000002', open: '12:00', close: '00:00', manager: '', lat: '', lng: '', dine: true, take: true, deliv: true, active: true },
+      { id: 'b3', name: 'PizzaBank – Highway Outlet', city: 'Your City', address: 'G.T. Road, Highway Plaza', phone: '+92 300 0000003', open: '10:00', close: '23:00', manager: '', lat: '', lng: '', dine: true, take: true, deliv: false, active: true }
+    ];
+  }
+  function curBranch() {
+    var id = S.settings.currentBranch, list = S.branches || [];
+    return list.filter(function (b) { return b.id === id; })[0] || list[0] || { name: S.settings.name, address: S.settings.address, city: '', phone: S.settings.phone };
+  }
+  function brAddr(b) { return [b.address, b.city].filter(Boolean).join(', '); }
+  function toMin(t) { var p = String(t || '0:0').split(':'); return (Number(p[0]) || 0) * 60 + (Number(p[1]) || 0); }
+  function t12(t) { var p = String(t || '0:0').split(':'), h = Number(p[0]) || 0; return ((h % 12) || 12) + ':' + (p[1] || '00') + ' ' + (h >= 12 ? 'PM' : 'AM'); }
+  function openNow(b) {
+    var n = new Date(), m = n.getHours() * 60 + n.getMinutes(), a = toMin(b.open), c = toMin(b.close);
+    if (a === c) return true;
+    return a < c ? (m >= a && m < c) : (m >= a || m < c);
+  }
+  function mapQuery(b) { return (b.lat !== '' && b.lng !== '' && b.lat != null && b.lng != null) ? (b.lat + ',' + b.lng) : brAddr(b); }
+
+  VIEWS.locator = function () {
+    if (!S.branches.some(function (b) { return b.id === ui.br; })) ui.br = curBranch().id;
+    var open = S.branches.filter(function (b) { return b.active && openNow(b); }).length;
+    var tabs = [['all', 'All'], ['dine', 'Dine-in'], ['take', 'Takeaway'], ['deliv', 'Delivery']];
+    $('#view').innerHTML = '<div class="toolbar"><div class="search" style="max-width:320px">' + ic('search', 17) + '<input class="input" id="brq" placeholder="Search branch, area or phone…" value="' + esc(ui.brq) + '" data-in="brq" autocomplete="off"></div>' +
+      '<div class="tabs">' + tabs.map(function (t) { return '<button class="' + (ui.brsvc === t[0] ? 'on' : '') + '" data-act="brsvc" data-id="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+      '<div style="flex:1"></div><span class="pill ok"><i class="dot"></i> ' + open + ' of ' + S.branches.length + ' open now</span>' +
+      '<button class="btn primary" data-act="br-new">' + ic('plus', 16) + ' Add branch</button></div>' +
+      '<div class="locator"><div class="br-list" id="br-list"></div><div class="card br-map" id="br-map"></div></div>';
+    renderBranchList(); renderBranchMap();
+  };
+
+  function renderBranchList() {
+    var q = ui.brq.trim().toLowerCase();
+    var list = S.branches.filter(function (b) {
+      var svc = ui.brsvc === 'all' || b[ui.brsvc];
+      return svc && (!q || (b.name + ' ' + b.address + ' ' + b.city + ' ' + b.phone).toLowerCase().indexOf(q) > -1);
+    });
+    var el = $('#br-list'); if (!el) return;
+    if (!list.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="big">📍</div><b>No branches found</b><div>Try another search or filter.</div></div></div>'; return; }
+    el.innerHTML = list.map(function (b) {
+      var isOpen = b.active && openNow(b), isCur = b.id === S.settings.currentBranch;
+      var dir = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(mapQuery(b));
+      return '<div class="br-card' + (b.id === ui.br ? ' on' : '') + (b.active ? '' : ' off') + '" data-act="br-select" data-id="' + b.id + '">' +
+        '<div class="br-top"><div class="emo" style="background:#fef3f2">🏪</div><div style="flex:1;min-width:0"><b>' + esc(b.name) + '</b>' + (isCur ? ' <span class="tag paid">This counter</span>' : '') +
+        '<div class="muted" style="font-size:12.5px">' + esc(brAddr(b)) + '</div></div>' +
+        '<span class="tag ' + (!b.active ? 'cancelled' : isOpen ? 'paid' : 'unpaid') + '">' + (!b.active ? 'Inactive' : isOpen ? 'Open now' : 'Closed') + '</span></div>' +
+        '<div class="br-meta"><span>' + ic('clock', 14) + ' ' + t12(b.open) + ' – ' + t12(b.close) + '</span><span>' + ic('phone', 14) + ' ' + esc(b.phone) + '</span>' + (b.manager ? '<span>👤 ' + esc(b.manager) + '</span>' : '') + '</div>' +
+        '<div class="br-tags">' + (b.dine ? '<span class="tag">🍽️ Dine-in</span>' : '') + (b.take ? '<span class="tag">🛍️ Takeaway</span>' : '') + (b.deliv ? '<span class="tag">🛵 Delivery</span>' : '') + '</div>' +
+        '<div class="br-actions"><a class="btn sm" target="_blank" rel="noopener" href="' + esc(dir) + '">' + ic('navigate', 14) + ' Directions</a>' +
+        '<a class="btn sm" href="tel:' + esc(String(b.phone).replace(/[^+\d]/g, '')) + '">' + ic('phone', 14) + ' Call</a>' +
+        (isCur ? '' : '<button class="btn sm" data-act="br-current" data-id="' + b.id + '">Use for this counter</button>') +
+        '<button class="btn sm icon" title="Edit" data-act="br-edit" data-id="' + b.id + '">' + ic('edit', 14) + '</button></div></div>';
+    }).join('');
+  }
+
+  function renderBranchMap() {
+    var b = S.branches.filter(function (x) { return x.id === ui.br; })[0], el = $('#br-map'); if (!el) return;
+    if (!b) { el.innerHTML = '<div class="empty"><div class="big">🗺️</div>Select a branch to see it on the map</div>'; return; }
+    var qy = encodeURIComponent(mapQuery(b));
+    el.innerHTML = '<div class="card-h" style="padding-bottom:12px"><div style="min-width:0"><h3>' + esc(b.name) + '</h3><small class="muted">' + esc(brAddr(b)) + '</small></div>' +
+      '<a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + qy + '">Open in Google Maps</a></div>' +
+      '<div class="br-frame"><iframe title="Map of ' + esc(b.name) + '" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=' + qy + '&z=15&output=embed"></iframe></div>';
+  }
+
+  function branchForm(id) {
+    var b = id ? S.branches.filter(function (x) { return x.id === id; })[0] : { name: '', city: '', address: '', phone: '', open: '11:00', close: '23:00', manager: '', lat: '', lng: '', dine: true, take: true, deliv: true, active: true };
+    var yn = function (fid, v) { return '<select class="select" id="' + fid + '"><option value="1"' + (v ? ' selected' : '') + '>Yes</option><option value="0"' + (v ? '' : ' selected') + '>No</option></select>'; };
+    openModal(modalHead(id ? 'Edit branch' : 'Add branch') + '<div class="modal-b stack" data-id="' + (id || '') + '">' +
+      '<div><label class="f">Branch name *</label><input class="input" id="bf-name" value="' + esc(b.name) + '"></div>' +
+      '<div class="grid2"><div><label class="f">Address *</label><input class="input" id="bf-address" value="' + esc(b.address) + '"></div><div><label class="f">City</label><input class="input" id="bf-city" value="' + esc(b.city) + '"></div></div>' +
+      '<div class="grid2"><div><label class="f">Phone</label><input class="input" id="bf-phone" value="' + esc(b.phone) + '"></div><div><label class="f">Manager</label><input class="input" id="bf-manager" value="' + esc(b.manager) + '"></div></div>' +
+      '<div class="grid2"><div><label class="f">Opens</label><input class="input" id="bf-open" type="time" value="' + esc(b.open) + '"></div><div><label class="f">Closes</label><input class="input" id="bf-close" type="time" value="' + esc(b.close) + '"></div></div>' +
+      '<div class="grid2"><div><label class="f">Latitude <span class="muted" style="font-weight:500">(optional, exact pin)</span></label><input class="input" id="bf-lat" value="' + esc(b.lat) + '" placeholder="32.5742"></div><div><label class="f">Longitude</label><input class="input" id="bf-lng" value="' + esc(b.lng) + '" placeholder="74.0754"></div></div>' +
+      '<div class="grid3"><div><label class="f">Dine-in</label>' + yn('bf-dine', b.dine) + '</div><div><label class="f">Takeaway</label>' + yn('bf-take', b.take) + '</div><div><label class="f">Delivery</label>' + yn('bf-deliv', b.deliv) + '</div></div>' +
+      '<div><label class="f">Branch status</label><select class="select" id="bf-active"><option value="1"' + (b.active ? ' selected' : '') + '>Active</option><option value="0"' + (b.active ? '' : ' selected') + '>Inactive</option></select></div></div>' +
+      '<div class="modal-f">' + (id ? '<button class="btn danger" data-act="br-del" data-id="' + id + '" style="margin-right:auto">Delete</button>' : '') + '<button class="btn" data-act="modal-close">Cancel</button><button class="btn primary" data-act="br-save">Save branch</button></div>', 'wide');
+  }
+
+  function saveBranch() {
+    var id = $('.modal-b').getAttribute('data-id'), g = function (x) { return $('#bf-' + x).value.trim(); };
+    if (!g('name') || !g('address')) { toast('Branch name and address are required', 'warn'); return; }
+    var lat = g('lat'), lng = g('lng');
+    if ((lat !== '' || lng !== '') && (isNaN(Number(lat)) || isNaN(Number(lng)) || lat === '' || lng === '')) { toast('Enter both latitude and longitude as numbers, or leave both empty', 'warn'); return; }
+    var data = {
+      name: g('name'), address: g('address'), city: g('city'), phone: g('phone'), manager: g('manager'),
+      open: $('#bf-open').value || '11:00', close: $('#bf-close').value || '23:00', lat: lat, lng: lng,
+      dine: $('#bf-dine').value === '1', take: $('#bf-take').value === '1', deliv: $('#bf-deliv').value === '1', active: $('#bf-active').value === '1'
+    };
+    if (id) Object.assign(S.branches.filter(function (x) { return x.id === id; })[0], data);
+    else { data.id = 'b' + Date.now(); S.branches.push(data); ui.br = data.id; }
+    save(); closeModal(); toast('Branch saved', 'ok'); rerender();
+  }
+
   /* ---------- events ---------- */
   var H = {
     'modal-close': closeModal,
@@ -885,6 +992,21 @@
       S.categories.push({ id: 'c' + Date.now(), name: n, emoji: $('#c-emoji').value.trim() || '🍽️', color: $('#c-color').value });
       save(); closeModal(); toast('Category added', 'ok'); VIEWS.menu();
     },
+    'br-select': function (t) { ui.br = t.dataset.id; renderBranchList(); renderBranchMap(); },
+    brsvc: function (t) { ui.brsvc = t.dataset.id; VIEWS.locator(); },
+    'br-current': function (t) {
+      S.settings.currentBranch = t.dataset.id; save();
+      toast('Receipts and this counter now use ' + curBranch().name, 'ok'); rerender();
+    },
+    'br-new': function () { branchForm(null); },
+    'br-edit': function (t) { branchForm(t.dataset.id); },
+    'br-save': saveBranch,
+    'br-del': function (t) {
+      var id = t.dataset.id;
+      if (S.branches.length <= 1) { toast('You need at least one branch', 'warn'); return; }
+      if (id === S.settings.currentBranch) { toast('Switch this counter to another branch before deleting', 'warn'); return; }
+      if (confirm('Delete this branch?')) { S.branches = S.branches.filter(function (b) { return b.id !== id; }); save(); closeModal(); toast('Branch deleted', 'warn'); rerender(); }
+    },
     'settings-save': saveSettings,
     export: function () {
       var blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
@@ -920,6 +1042,7 @@
     else if (k === 'oq') { ui.oq = t.value; var p = t.selectionStart; VIEWS.orders(); var n = $('#oq'); n.focus(); n.setSelectionRange(p, p); }
     else if (k === 'mq') { ui.mq = t.value; var p2 = t.selectionStart; VIEWS.menu(); var n2 = $('#mq'); n2.focus(); n2.setSelectionRange(p2, p2); }
     else if (k === 'tendered' && pay) { pay.tendered = t.value; updateChange(); }
+    else if (k === 'brq') { ui.brq = t.value; renderBranchList(); }
   });
 
   // refresh only the numbers while typing a discount so the input keeps focus
