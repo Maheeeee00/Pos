@@ -80,8 +80,8 @@ window.PB_DATA = (function () {
   var settings = {
     name: 'PizzaBank Hotel',
     tagline: 'Pizza · Grill · Fine Dining',
-    address: 'Main Boulevard, Your City',
-    phone: '+92 300 0000000',
+    address: 'Main GT Rd, Muhallah Peer Abdullah Shah Ghakhar, Gakhar Mandi 52200',
+    phone: '',
     currency: 'Rs.',
     taxRate: 5,
     serviceRate: 5,

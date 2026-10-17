@@ -82,7 +82,12 @@
       var r = JSON.parse(localStorage.getItem(KEY));
       if (r && r.v === 1 && r.menu && r.orders) {
         if (!r.cart) r.cart = blankCart();
-        if (!r.branches || !r.branches.length) r.branches = defaultBranches();
+        var oldDemo = r.branches && r.branches.length && r.branches.every(function (b) { return b.city === 'Your City' && /^\+92 300 000000\d$/.test(b.phone); });
+        if (!r.branches || !r.branches.length || oldDemo) {
+          r.branches = defaultBranches(); r.settings.currentBranch = r.branches[0].id;
+          if (/Your City/.test(r.settings.address || '')) r.settings.address = D.settings.address;
+          if (r.settings.phone === '+92 300 0000000') r.settings.phone = '';
+        }
         if (!r.settings.currentBranch) r.settings.currentBranch = r.branches[0].id;
         return r;
       }
@@ -567,7 +572,7 @@
 
   /* ---------- receipt ---------- */
   function receiptHTML(o) {
-    var s = S.settings, b = curBranch(), r = '<div class="receipt"><div class="c"><h2>' + esc(s.name) + '</h2><div>' + esc(s.tagline) + '</div><div><b>' + esc(b.name) + '</b></div><div>' + esc(brAddr(b) || s.address) + '</div><div>Tel: ' + esc(b.phone || s.phone) + '</div></div><hr>' +
+    var s = S.settings, b = curBranch(), r = '<div class="receipt"><div class="c"><h2>' + esc(s.name) + '</h2><div>' + esc(s.tagline) + '</div><div><b>' + esc(b.name) + '</b></div><div>' + esc(brAddr(b) || s.address) + '</div>' + ((b.phone || s.phone) ? '<div>Tel: ' + esc(b.phone || s.phone) + '</div>' : '') + '</div><hr>' +
       '<div class="r"><span>Order #' + o.no + '</span><span>' + TYPE_LABEL[o.type] + (o.table ? ' · ' + esc(o.table) : '') + '</span></div>' +
       '<div class="r"><span>' + dateStr(o.createdAt) + '</span><span>' + timeStr(o.createdAt) + '</span></div>';
     if (o.cust && (o.cust.name || o.cust.phone)) r += '<div>Customer: ' + esc(o.cust.name) + ' ' + esc(o.cust.phone) + '</div>';
@@ -825,9 +830,7 @@
      ====================================================================== */
   function defaultBranches() {
     return [
-      { id: 'b1', name: 'PizzaBank Hotel – Main Branch', city: 'Your City', address: 'Main Boulevard', phone: '+92 300 0000001', open: '11:00', close: '01:00', manager: 'Branch Manager', lat: '', lng: '', dine: true, take: true, deliv: true, active: true },
-      { id: 'b2', name: 'PizzaBank – City Center', city: 'Your City', address: 'City Center Plaza, Ground Floor', phone: '+92 300 0000002', open: '12:00', close: '00:00', manager: '', lat: '', lng: '', dine: true, take: true, deliv: true, active: true },
-      { id: 'b3', name: 'PizzaBank – Highway Outlet', city: 'Your City', address: 'G.T. Road, Highway Plaza', phone: '+92 300 0000003', open: '10:00', close: '23:00', manager: '', lat: '', lng: '', dine: true, take: true, deliv: false, active: true }
+      { id: 'b1', name: 'Pizza Bank - Gakhar Mandi', city: 'Gakhar Mandi 52200, Pakistan', address: 'Main GT Rd, Muhallah Peer Abdullah Shah Ghakhar', phone: '', open: '11:00', close: '00:00', manager: '', lat: '', lng: '', dine: true, take: true, deliv: true, active: true }
     ];
   }
   function curBranch() {
@@ -842,7 +845,7 @@
     if (a === c) return true;
     return a < c ? (m >= a && m < c) : (m >= a || m < c);
   }
-  function mapQuery(b) { return (b.lat !== '' && b.lng !== '' && b.lat != null && b.lng != null) ? (b.lat + ',' + b.lng) : brAddr(b); }
+  function mapQuery(b) { return (b.lat !== '' && b.lng !== '' && b.lat != null && b.lng != null) ? (b.lat + ',' + b.lng) : [b.name, brAddr(b)].filter(Boolean).join(', '); }
 
   VIEWS.locator = function () {
     if (!S.branches.some(function (b) { return b.id === ui.br; })) ui.br = curBranch().id;
@@ -871,10 +874,10 @@
         '<div class="br-top"><div class="emo" style="background:#fef3f2">🏪</div><div style="flex:1;min-width:0"><b>' + esc(b.name) + '</b>' + (isCur ? ' <span class="tag paid">This counter</span>' : '') +
         '<div class="muted" style="font-size:12.5px">' + esc(brAddr(b)) + '</div></div>' +
         '<span class="tag ' + (!b.active ? 'cancelled' : isOpen ? 'paid' : 'unpaid') + '">' + (!b.active ? 'Inactive' : isOpen ? 'Open now' : 'Closed') + '</span></div>' +
-        '<div class="br-meta"><span>' + ic('clock', 14) + ' ' + t12(b.open) + ' – ' + t12(b.close) + '</span><span>' + ic('phone', 14) + ' ' + esc(b.phone) + '</span>' + (b.manager ? '<span>👤 ' + esc(b.manager) + '</span>' : '') + '</div>' +
+        '<div class="br-meta"><span>' + ic('clock', 14) + ' ' + t12(b.open) + ' – ' + t12(b.close) + '</span>' + (b.phone ? '<span>' + ic('phone', 14) + ' ' + esc(b.phone) + '</span>' : '') + (b.manager ? '<span>👤 ' + esc(b.manager) + '</span>' : '') + '</div>' +
         '<div class="br-tags">' + (b.dine ? '<span class="tag">🍽️ Dine-in</span>' : '') + (b.take ? '<span class="tag">🛍️ Takeaway</span>' : '') + (b.deliv ? '<span class="tag">🛵 Delivery</span>' : '') + '</div>' +
         '<div class="br-actions"><a class="btn sm" target="_blank" rel="noopener" href="' + esc(dir) + '">' + ic('navigate', 14) + ' Directions</a>' +
-        '<a class="btn sm" href="tel:' + esc(String(b.phone).replace(/[^+\d]/g, '')) + '">' + ic('phone', 14) + ' Call</a>' +
+        (b.phone ? '<a class="btn sm" href="tel:' + esc(String(b.phone).replace(/[^+\d]/g, '')) + '">' + ic('phone', 14) + ' Call</a>' : '') +
         (isCur ? '' : '<button class="btn sm" data-act="br-current" data-id="' + b.id + '">Use for this counter</button>') +
         '<button class="btn sm icon" title="Edit" data-act="br-edit" data-id="' + b.id + '">' + ic('edit', 14) + '</button></div></div>';
     }).join('');
