@@ -425,6 +425,14 @@
     return b;
   }
 
+  function sumRows(t, c) {
+    return '<div><span>Subtotal</span><span>' + fmt(t.sub) + '</span></div>' +
+      (t.disc ? '<div><span>Discount</span><span>- ' + fmt(t.disc) + '</span></div>' : '') +
+      '<div><span>Tax (' + S.settings.taxRate + '%)</span><span>' + fmt(t.tax) + '</span></div>' +
+      (c.type === 'dine-in' && S.settings.serviceRate ? '<div><span>Service (' + S.settings.serviceRate + '%)</span><span>' + fmt(t.service) + '</span></div>' : '') +
+      (t.delivery ? '<div><span>Delivery fee</span><span>' + fmt(t.delivery) + '</span></div>' : '');
+  }
+
   function renderCart() {
     var c = S.cart, t = calc(c.items, c.type, c.dt, c.dv);
     var qtyN = c.items.reduce(function (a, i) { return a + i.qty; }, 0);
@@ -435,6 +443,7 @@
         return '<button class="' + (c.type === k ? 'on' : '') + '" data-act="otype" data-id="' + k + '">' + { 'dine-in': '🍽️', takeaway: '🛍️', delivery: '🛵' }[k] + ' ' + TYPE_LABEL[k] + '</button>';
       }).join('') + '</div></div>';
 
+    h += '<div class="cart-scroll">';
     h += '<div class="cart-ctx">';
     if (c.type === 'dine-in') {
       var busy = busyTables(), tb = '';
@@ -462,21 +471,19 @@
     }
     h += '</div>';
 
-    h += '<div class="cart-f"><div class="disc"><select class="select" data-bind="dt"><option value="percent"' + (c.dt === 'percent' ? ' selected' : '') + '>Discount %</option><option value="amount"' + (c.dt === 'amount' ? ' selected' : '') + '>Discount ' + esc(S.settings.currency) + '</option></select>' +
+    h += '<div class="cart-opts"><div class="disc"><select class="select" data-bind="dt"><option value="percent"' + (c.dt === 'percent' ? ' selected' : '') + '>Discount %</option><option value="amount"' + (c.dt === 'amount' ? ' selected' : '') + '>Discount ' + esc(S.settings.currency) + '</option></select>' +
       '<input class="input" type="number" min="0" data-bind="dv" value="' + (c.dv || '') + '" placeholder="0"></div>' +
-      '<input class="input" data-bind="note" value="' + esc(c.note) + '" placeholder="Order note (e.g. no onions, extra spicy)" style="margin-bottom:10px">' +
-      '<div class="sum"><div><span>Subtotal</span><span>' + fmt(t.sub) + '</span></div>' +
-      (t.disc ? '<div><span>Discount</span><span>- ' + fmt(t.disc) + '</span></div>' : '') +
-      '<div><span>Tax (' + S.settings.taxRate + '%)</span><span>' + fmt(t.tax) + '</span></div>' +
-      (c.type === 'dine-in' && S.settings.serviceRate ? '<div><span>Service (' + S.settings.serviceRate + '%)</span><span>' + fmt(t.service) + '</span></div>' : '') +
-      (t.delivery ? '<div><span>Delivery fee</span><span>' + fmt(t.delivery) + '</span></div>' : '') +
-      '<div class="tot"><span>Total</span><span>' + fmt(t.total) + '</span></div></div>' +
+      '<input class="input" data-bind="note" value="' + esc(c.note) + '" placeholder="Order note (e.g. no onions, extra spicy)"></div>' +
+      '<div class="sum">' + sumRows(t, c) + '</div></div>';
+    h += '<div class="cart-f"><div class="tot-row"><span>Total</span><span>' + fmt(t.total) + '</span></div>' +
       '<div class="cart-actions"><button class="btn" data-act="hold" ' + (c.items.length ? '' : 'disabled') + '>' + ic('flame', 16) + ' Send to Kitchen</button>' +
       '<button class="btn primary" data-act="charge" ' + (c.items.length ? '' : 'disabled') + '>' + ic('dollar', 16) + ' Charge ' + fmt(t.total) + '</button></div></div>';
 
     var el = $('#cart');
     if (!el) return;
+    var oldScroll = $('.cart-scroll', el), keep = oldScroll ? oldScroll.scrollTop : 0;
     el.innerHTML = h;
+    var newScroll = $('.cart-scroll', el); if (newScroll) newScroll.scrollTop = keep;
     el.classList.toggle('open', ui.cartOpen);
     var fab = $('#fab-n'); if (fab) fab.textContent = qtyN;
   }
@@ -491,6 +498,7 @@
     if (line) line.qty++;
     else S.cart.items.push({ key: key, id: id, name: m.name, variant: v ? v.n : '', price: v ? v.p : m.price, qty: 1, emoji: m.emoji });
     save(); renderCart();
+    var last = $('.cart-items .line:last-child'); if (last && last.scrollIntoView) last.scrollIntoView({ block: 'nearest' });
   }
 
   function validateCart() {
@@ -1051,12 +1059,8 @@
   // refresh only the numbers while typing a discount so the input keeps focus
   function liveSummary() {
     var c = S.cart, t = calc(c.items, c.type, c.dt, c.dv), sum = $('.cart .sum'); if (!sum) return;
-    var rows = '<div><span>Subtotal</span><span>' + fmt(t.sub) + '</span></div>' + (t.disc ? '<div><span>Discount</span><span>- ' + fmt(t.disc) + '</span></div>' : '') +
-      '<div><span>Tax (' + S.settings.taxRate + '%)</span><span>' + fmt(t.tax) + '</span></div>' +
-      (c.type === 'dine-in' && S.settings.serviceRate ? '<div><span>Service (' + S.settings.serviceRate + '%)</span><span>' + fmt(t.service) + '</span></div>' : '') +
-      (t.delivery ? '<div><span>Delivery fee</span><span>' + fmt(t.delivery) + '</span></div>' : '') +
-      '<div class="tot"><span>Total</span><span>' + fmt(t.total) + '</span></div>';
-    sum.innerHTML = rows;
+    sum.innerHTML = sumRows(t, c);
+    var tr = $('.cart .tot-row span:last-child'); if (tr) tr.textContent = fmt(t.total);
     var ch = $('.cart-actions .primary'); if (ch) ch.innerHTML = ic('dollar', 16) + ' Charge ' + fmt(t.total);
   }
 
