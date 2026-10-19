@@ -4,8 +4,9 @@
 
 function renderTopbar(activePage) {
   const showTables = activePage === 'pos';
+  const inPgs = window.location.pathname.includes('/pages/');
   document.getElementById('topbar').innerHTML = `
-    <a class="logo" href="index.html">
+    <a class="logo" href="${inPgs ? '../' : ''}index.html">
       <div class="logo-icon">🍕</div>
       Pizza <span>Bank</span>
     </a>
@@ -31,16 +32,21 @@ function renderTopbar(activePage) {
 }
 
 function renderSidebar(activePage) {
+  // Detect if we're inside the /pages/ subfolder
+  const inPages = window.location.pathname.includes('/pages/');
+  const root    = inPages ? '../' : '';
+  const pagesDir = inPages ? '' : 'pages/';
+
   const links = [
-    { id:'pos',       label:'New Order',       icon:'🏠', href:'index.html',     badge:null },
-    { id:'orders',    label:'Orders',          icon:'📋', href:'pages/orders.html',   badge:'3' },
-    { id:'kitchen',   label:'Kitchen Display', icon:'🖥️', href:'pages/kitchen.html',  badge:'5', badgeColor:'var(--danger)' },
-    { id:'delivery',  label:'Delivery',        icon:'🛵', href:'pages/delivery.html', badge:null },
-    { id:'menu',      label:'Menu Mgmt',       icon:'📖', href:'pages/menu.html',     badge:null },
-    { id:'inventory', label:'Inventory',       icon:'📦', href:'pages/inventory.html',badge:null },
-    { id:'customers', label:'Customers',       icon:'👥', href:'pages/customers.html',badge:null },
-    { id:'reports',   label:'Reports',         icon:'📊', href:'pages/reports.html',  badge:null },
-    { id:'settings',  label:'Settings',        icon:'⚙️', href:'pages/settings.html', badge:null },
+    { id:'pos',       label:'New Order',       icon:'🏠', href: root + 'index.html',                  badge:null },
+    { id:'orders',    label:'Orders',          icon:'📋', href: root + pagesDir + 'orders.html',       badge:'3' },
+    { id:'kitchen',   label:'Kitchen Display', icon:'🖥️', href: root + pagesDir + 'kitchen.html',      badge:'5', badgeColor:'var(--danger)' },
+    { id:'delivery',  label:'Delivery',        icon:'🛵', href: root + pagesDir + 'delivery.html',     badge:null },
+    { id:'menu',      label:'Menu Mgmt',       icon:'📖', href: root + pagesDir + 'menu.html',         badge:null },
+    { id:'inventory', label:'Inventory',       icon:'📦', href: root + pagesDir + 'inventory.html',    badge:null },
+    { id:'customers', label:'Customers',       icon:'👥', href: root + pagesDir + 'customers.html',    badge:null },
+    { id:'reports',   label:'Reports',         icon:'📊', href: root + pagesDir + 'reports.html',      badge:null },
+    { id:'settings',  label:'Settings',        icon:'⚙️', href: root + pagesDir + 'settings.html',     badge:null },
   ];
 
   const ops = links.slice(0,4);
