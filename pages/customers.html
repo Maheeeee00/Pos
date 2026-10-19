@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pizza Bank POS — Customers</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="app-root">
+    <header class="topbar" id="topbar"></header>
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Customers</div>
+          <div class="page-sub">Customer profiles and purchase history</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div class="search-box" style="width:220px;">
+            <input type="text" placeholder="Search customers…" oninput="filterCust(this.value)">
+          </div>
+          <button class="btn btn-primary" onclick="openAddCust()">+ Add Customer</button>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-label">Total Customers</div><div class="stat-value">5</div></div>
+        <div class="stat-card"><div class="stat-label">Active Today</div><div class="stat-value text-success">2</div></div>
+        <div class="stat-card"><div class="stat-label">Avg. Spend</div><div class="stat-value" style="font-size:18px;">Rs. 23,750</div></div>
+        <div class="stat-card"><div class="stat-label">Top Customer</div><div class="stat-value" style="font-size:16px;">Nadia H.</div></div>
+      </div>
+
+      <div class="table-wrap mt-16">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Customer</th>
+              <th>Phone</th>
+              <th>Total Visits</th>
+              <th>Total Spent</th>
+              <th>Last Visit</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="custBody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <!-- Add Customer Modal -->
+  <div class="modal-overlay" id="custModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal">
+      <h3 id="custModalTitle">Add Customer</h3>
+      <div class="input-row">
+        <div class="input-group"><div class="input-label">Full Name</div><input class="input" placeholder="Ahmed Raza"></div>
+        <div class="input-group"><div class="input-label">Phone Number</div><input class="input" placeholder="0300-1234567"></div>
+      </div>
+      <div class="input-group"><div class="input-label">Address (optional)</div><input class="input" placeholder="House 12, Block B, Lahore"></div>
+      <div class="input-group"><div class="input-label">Notes</div><input class="input" placeholder="e.g. Allergic to nuts, prefers extra spicy"></div>
+      <div class="modal-btns">
+        <button class="modal-btn modal-cancel" onclick="document.getElementById('custModal').classList.remove('open')">Cancel</button>
+        <button class="modal-btn modal-confirm" onclick="showToast('✅ Customer saved!');document.getElementById('custModal').classList.remove('open')">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/sidebar.js"></script>
+  <script>
+    let custData = [...CUSTOMERS];
+    let custSearch = '';
+
+    function filterCust(q) { custSearch = q; renderCust(); }
+    function openAddCust() {
+      document.getElementById('custModalTitle').textContent = 'Add Customer';
+      document.getElementById('custModal').classList.add('open');
+    }
+
+    function renderCust() {
+      let data = custData;
+      if (custSearch) data = data.filter(c =>
+        c.name.toLowerCase().includes(custSearch.toLowerCase()) ||
+        c.phone.includes(custSearch)
+      );
+
+      document.getElementById('custBody').innerHTML = data.map(c => `
+        <tr>
+          <td class="text-muted">${c.id}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="avatar" style="width:32px;height:32px;font-size:12px;flex-shrink:0;">${c.name.charAt(0)}</div>
+              <div>
+                <div class="bold">${c.name}</div>
+                ${c.spent > 40000 ? '<span style="font-size:10px;color:var(--gold);font-weight:700;">⭐ VIP</span>' : ''}
+              </div>
+            </div>
+          </td>
+          <td>${c.phone}</td>
+          <td class="font-num">${c.visits}</td>
+          <td class="text-accent font-num bold">${fmt(c.spent)}</td>
+          <td class="text-muted">${c.last}</td>
+          <td style="display:flex;gap:6px;">
+            <button class="btn btn-sm btn-secondary" onclick="showToast('👤 Viewing ${c.name}')">View</button>
+            <button class="btn btn-sm btn-primary" onclick="showToast('📞 Calling ${c.name}...')">Call</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    window.onload = () => { initPage('customers'); renderCust(); };
+  </script>
+</body>
+</html>

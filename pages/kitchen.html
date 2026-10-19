@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pizza Bank POS — Kitchen Display</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .kds-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+    .kds-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+    .kds-card.urgent { border-color:var(--danger); }
+    .kds-card.warning { border-color:var(--warning); }
+    .kds-header { padding:12px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
+    .kds-table { font-family:'Poppins',sans-serif; font-weight:700; font-size:15px; }
+    .kds-timer { font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; padding:3px 10px; border-radius:12px; }
+    .timer-ok { background:rgba(34,197,94,.15); color:var(--success); }
+    .timer-warn { background:rgba(245,158,11,.15); color:var(--warning); }
+    .timer-urgent { background:rgba(239,68,68,.15); color:var(--danger); }
+    .kds-items { padding:12px 16px; }
+    .kds-item { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px dashed var(--border); font-size:13px; }
+    .kds-item:last-child { border-bottom:none; }
+    .kds-qty { font-weight:700; color:var(--accent2); margin-right:8px; }
+    .kds-done { text-decoration:line-through; color:var(--fg3); }
+    .kds-footer { padding:10px 16px; border-top:1px solid var(--border); display:flex; gap:8px; }
+    .tick-btn { width:20px;height:20px;border-radius:50%;border:2px solid var(--border);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s; }
+    .tick-btn.checked { background:var(--success);border-color:var(--success);color:#fff; }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+    <header class="topbar" id="topbar"></header>
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Kitchen Display System</div>
+          <div class="page-sub">Live orders for kitchen staff</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span style="font-size:13px;color:var(--fg3);">Auto-refresh: <strong style="color:var(--success);">ON</strong></span>
+          <button class="btn btn-secondary" onclick="showToast('🔔 Bell rang in kitchen!')">🔔 Ring Bell</button>
+        </div>
+      </div>
+
+      <div class="stat-grid" style="margin-bottom:24px;">
+        <div class="stat-card"><div class="stat-label">Active Orders</div><div class="stat-value" style="color:var(--accent2);">5</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Prep Time</div><div class="stat-value">14 <span style="font-size:14px;color:var(--fg3);">min</span></div></div>
+        <div class="stat-card"><div class="stat-label">Ready to Serve</div><div class="stat-value" style="color:var(--success);">1</div></div>
+        <div class="stat-card"><div class="stat-label">Delayed</div><div class="stat-value" style="color:var(--danger);">2</div></div>
+      </div>
+
+      <div class="kds-grid" id="kdsGrid"></div>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/sidebar.js"></script>
+  <script>
+    const KDS_ORDERS = [
+      { id:'#1042', table:'T2', type:'Dine-in', elapsed:22, items:[
+        { name:'Chicken Tikka Pizza', qty:1, done:false },
+        { name:'Loaded Fries',        qty:2, done:true  },
+        { name:'Oreo Shake',          qty:2, done:false },
+      ]},
+      { id:'#1041', table:'T4', type:'Dine-in', elapsed:8, items:[
+        { name:'Margherita Classic',  qty:2, done:false },
+        { name:'Fettuccine Alfredo',  qty:1, done:false },
+        { name:'Caesar Salad',        qty:1, done:true  },
+        { name:'Soft Drink',          qty:2, done:true  },
+      ]},
+      { id:'#1040', table:'-',  type:'Delivery', elapsed:5, items:[
+        { name:'BBQ Loaded Beef',     qty:1, done:false },
+        { name:'Garlic Bread',        qty:1, done:false },
+      ]},
+      { id:'#1043', table:'T5', type:'Dine-in', elapsed:3, items:[
+        { name:'Peri-Peri Chicken',   qty:1, done:false },
+        { name:'Lemonade Mint',       qty:2, done:false },
+      ]},
+      { id:'#1044', table:'-',  type:'Takeaway', elapsed:18, items:[
+        { name:'Smash Beef Burger',   qty:2, done:false },
+        { name:'Loaded Fries',        qty:2, done:false },
+        { name:'Soft Drink',          qty:2, done:false },
+      ]},
+    ];
+
+    let timers = {};
+    KDS_ORDERS.forEach(o => timers[o.id] = o.elapsed);
+
+    function timerClass(mins) {
+      if (mins < 10) return 'timer-ok';
+      if (mins < 20) return 'timer-warn';
+      return 'timer-urgent';
+    }
+    function cardClass(mins) {
+      if (mins >= 20) return 'urgent';
+      if (mins >= 10) return 'warning';
+      return '';
+    }
+
+    function toggleItem(orderId, idx) {
+      KDS_ORDERS.find(o=>o.id===orderId).items[idx].done ^= 1;
+      renderKDS();
+    }
+
+    function markReady(orderId) {
+      showToast('✅ Order ' + orderId + ' marked ready!');
+      const idx = KDS_ORDERS.findIndex(o=>o.id===orderId);
+      if (idx>-1) KDS_ORDERS.splice(idx,1);
+      renderKDS();
+    }
+
+    function renderKDS() {
+      document.getElementById('kdsGrid').innerHTML = KDS_ORDERS.map(o => {
+        const mins = timers[o.id] || 0;
+        const allDone = o.items.every(i=>i.done);
+        return `
+        <div class="kds-card ${cardClass(mins)}">
+          <div class="kds-header">
+            <div>
+              <div class="kds-table">${o.type==='Dine-in'?'Table '+o.table:o.type}</div>
+              <div style="font-size:11px;color:var(--fg3);">${o.id}</div>
+            </div>
+            <span class="kds-timer ${timerClass(mins)}">${mins} min</span>
+          </div>
+          <div class="kds-items">
+            ${o.items.map((item,i) => `
+              <div class="kds-item">
+                <div>
+                  <button class="tick-btn ${item.done?'checked':''}" onclick="toggleItem('${o.id}',${i})">
+                    ${item.done?'✓':''}
+                  </button>
+                  <span class="kds-qty" style="margin-left:8px;">${item.qty}×</span>
+                  <span class="${item.done?'kds-done':''}">${item.name}</span>
+                </div>
+              </div>`).join('')}
+          </div>
+          <div class="kds-footer">
+            <button class="btn btn-sm ${allDone?'btn-success':'btn-secondary'}" style="flex:1" onclick="markReady('${o.id}')">
+              ${allDone ? '✅ Mark Ready' : '⏳ In Progress'}
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="showToast('🔔 Bumped!')">Bump</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // Tick timer every minute
+    setInterval(() => {
+      KDS_ORDERS.forEach(o => { timers[o.id] = (timers[o.id]||0) + 1; });
+      renderKDS();
+    }, 60000);
+
+    window.onload = () => { initPage('kitchen'); renderKDS(); };
+  </script>
+</body>
+</html>

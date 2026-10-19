@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pizza Bank POS — Delivery</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .delivery-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; display:flex; gap:16px; align-items:flex-start; margin-bottom:12px; }
+    .delivery-card:hover { border-color:var(--accent); }
+    .d-icon { width:44px;height:44px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0; }
+    .d-info { flex:1; }
+    .d-id { font-weight:700;font-size:14px;margin-bottom:2px; }
+    .d-customer { font-size:13px;color:var(--fg2);margin-bottom:4px; }
+    .d-addr { font-size:12px;color:var(--fg3); }
+    .d-right { text-align:right;flex-shrink:0; }
+    .d-total { font-weight:700;font-size:15px;color:var(--accent2);font-variant-numeric:tabular-nums; }
+    .d-time { font-size:11px;color:var(--fg3);margin-top:3px; }
+    .rider-chip { display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;cursor:pointer;margin-right:8px;margin-bottom:6px;transition:all .15s; }
+    .rider-chip:hover { border-color:var(--accent); color:var(--accent2); }
+    .rider-chip.assigned { background:rgba(232,67,26,.1);border-color:var(--accent);color:var(--accent2); }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+    <header class="topbar" id="topbar"></header>
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Delivery Management</div>
+          <div class="page-sub">Track and assign delivery orders</div>
+        </div>
+        <button class="btn btn-primary" onclick="showToast('🛵 New delivery order created!')">+ New Delivery</button>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-label">Active Deliveries</div><div class="stat-value text-accent">4</div></div>
+        <div class="stat-card"><div class="stat-label">Riders Online</div><div class="stat-value text-success">3</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Delivery Time</div><div class="stat-value">28 <span style="font-size:14px;color:var(--fg3)">min</span></div></div>
+        <div class="stat-card"><div class="stat-label">Delivered Today</div><div class="stat-value">17</div></div>
+      </div>
+
+      <div class="grid-2 mt-24" style="gap:24px;align-items:start;">
+        <!-- Active Deliveries -->
+        <div>
+          <div class="card-title" style="margin-bottom:16px;">🛵 Active Deliveries</div>
+          <div id="deliveryList"></div>
+        </div>
+
+        <!-- Riders -->
+        <div>
+          <div class="card-title" style="margin-bottom:16px;">👨‍✈️ Riders</div>
+          <div class="card">
+            <table style="width:100%;">
+              <thead>
+                <tr>
+                  <th>Rider</th>
+                  <th>Status</th>
+                  <th>Orders</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Ali Hassan</strong><br><span class="text-muted" style="font-size:11px;">0301-1234567</span></td>
+                  <td><span class="status status-ready">Available</span></td>
+                  <td>0</td>
+                  <td><button class="btn btn-sm btn-primary" onclick="showToast('📞 Calling Ali Hassan...')">Call</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Rizwan Ahmed</strong><br><span class="text-muted" style="font-size:11px;">0302-9876543</span></td>
+                  <td><span class="status status-preparing">On Delivery</span></td>
+                  <td>2</td>
+                  <td><button class="btn btn-sm btn-secondary" onclick="showToast('📍 Tracking Rizwan...')">Track</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Kamran Malik</strong><br><span class="text-muted" style="font-size:11px;">0303-5551234</span></td>
+                  <td><span class="status status-preparing">On Delivery</span></td>
+                  <td>1</td>
+                  <td><button class="btn btn-sm btn-secondary" onclick="showToast('📍 Tracking Kamran...')">Track</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Tariq Shah</strong><br><span class="text-muted" style="font-size:11px;">0304-7778889</span></td>
+                  <td><span class="status status-cancelled">Offline</span></td>
+                  <td>0</td>
+                  <td><button class="btn btn-sm btn-secondary" onclick="showToast('📞 Calling Tariq...')">Call</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/sidebar.js"></script>
+  <script>
+    const DELIVERIES = [
+      { id:'#1040', customer:'Ahmed Raza', phone:'0300-1234567', address:'House 12, Block B, DHA Phase 4, Lahore', items:2, total:2100, status:'pending', rider:'Unassigned', eta:'—' },
+      { id:'#1037', customer:'Sara Malik', phone:'0321-9876543', address:'Flat 3B, Gulberg III, Main Blvd, Lahore', items:3, total:3600, status:'preparing', rider:'Rizwan Ahmed', eta:'25 min' },
+      { id:'#1035', customer:'Bilal Khan',  phone:'0333-5551234', address:'Street 7, Model Town, Lahore', items:1, total:1500, status:'preparing', rider:'Kamran Malik', eta:'18 min' },
+      { id:'#1033', customer:'Nadia H.',   phone:'0345-7778889', address:'204, Cavalry Ground, Lahore', items:4, total:4800, status:'ready', rider:'Rizwan Ahmed', eta:'10 min' },
+    ];
+
+    function renderDeliveries() {
+      document.getElementById('deliveryList').innerHTML = DELIVERIES.map(d => `
+        <div class="delivery-card">
+          <div class="d-icon">🛵</div>
+          <div class="d-info">
+            <div class="d-id">${d.id} · <span class="status status-${d.status}">${d.status}</span></div>
+            <div class="d-customer">👤 ${d.customer} · ${d.phone}</div>
+            <div class="d-addr">📍 ${d.address}</div>
+            <div style="margin-top:8px;font-size:12px;color:var(--fg2);">
+              🏍 Rider: <strong>${d.rider}</strong> &nbsp;|&nbsp; ETA: <strong>${d.eta}</strong>
+            </div>
+            <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-sm btn-secondary" onclick="showToast('📞 Calling ${d.customer}...')">📞 Call</button>
+              ${d.rider==='Unassigned'?`<button class="btn btn-sm btn-primary" onclick="showToast('🛵 Rider assigned!')">Assign Rider</button>`:''}
+              ${d.status==='ready'?`<button class="btn btn-sm btn-success" onclick="showToast('✅ Marked delivered!')">Delivered</button>`:''}
+            </div>
+          </div>
+          <div class="d-right">
+            <div class="d-total">${fmt(d.total)}</div>
+            <div class="d-time">${d.items} items</div>
+          </div>
+        </div>`).join('');
+    }
+
+    window.onload = () => { initPage('delivery'); renderDeliveries(); };
+  </script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pizza Bank POS — Reports</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .bar-chart { display:flex; align-items:flex-end; gap:6px; height:160px; padding:0 4px; }
+    .bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+    .bar { width:100%; border-radius:6px 6px 0 0; transition:height .4s cubic-bezier(.34,1.56,.64,1); min-height:4px; }
+    .bar-label { font-size:10px; color:var(--fg3); white-space:nowrap; }
+    .bar-val { font-size:10px; color:var(--fg2); font-weight:600; font-variant-numeric:tabular-nums; }
+    .top-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+    .top-item:last-child { border-bottom:none; }
+    .top-rank { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0; }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+    <header class="topbar" id="topbar"></header>
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Reports & Analytics</div>
+          <div class="page-sub">Sales performance and insights</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <select class="input" style="width:140px;" onchange="showToast('📅 Period updated!')">
+            <option>Today</option>
+            <option>This Week</option>
+            <option>This Month</option>
+            <option>Last Month</option>
+          </select>
+          <button class="btn btn-secondary" onclick="showToast('📊 Report exported!')">Export PDF</button>
+        </div>
+      </div>
+
+      <!-- Summary Stats -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Sales</div>
+          <div class="stat-value">Rs. 84,250</div>
+          <div class="stat-change up">↑ 18% vs yesterday</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Orders</div>
+          <div class="stat-value">47</div>
+          <div class="stat-change up">↑ 12% vs yesterday</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg Order Value</div>
+          <div class="stat-value">Rs. 1,793</div>
+          <div class="stat-change up">↑ 5% vs yesterday</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Cancelled Orders</div>
+          <div class="stat-value" style="color:var(--danger);">3</div>
+          <div class="stat-change down">↑ 1 vs yesterday</div>
+        </div>
+      </div>
+
+      <div class="grid-2 mt-24" style="gap:20px;align-items:start;">
+        <!-- Sales by Hour -->
+        <div class="card">
+          <div class="card-title">📈 Sales by Hour</div>
+          <div class="bar-chart" id="salesChart"></div>
+          <div style="display:flex;gap:6px;margin-top:0;" id="salesLabels"></div>
+        </div>
+
+        <!-- Top Items -->
+        <div class="card">
+          <div class="card-title">🏆 Top Selling Items</div>
+          <div id="topItems"></div>
+        </div>
+      </div>
+
+      <div class="grid-2 mt-16" style="gap:20px;align-items:start;">
+        <!-- Order Types -->
+        <div class="card">
+          <div class="card-title">🍽 Order Type Breakdown</div>
+          <div id="typeBreakdown"></div>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="card">
+          <div class="card-title">💳 Payment Methods</div>
+          <div id="payBreakdown"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/sidebar.js"></script>
+  <script>
+    const HOURLY = [
+      {h:'9AM',v:4200},{h:'10AM',v:8500},{h:'11AM',v:12300},{h:'12PM',v:18600},
+      {h:'1PM',v:22400},{h:'2PM',v:9800},{h:'3PM',v:5200},{h:'4PM',v:3250},
+    ];
+    const MAX_V = Math.max(...HOURLY.map(h=>h.v));
+
+    const TOP_ITEMS = [
+      {name:'Chicken Tikka Pizza', qty:18, revenue:27000, emoji:'🍕'},
+      {name:'Peri-Peri Chicken',   qty:14, revenue:21700, emoji:'🍕'},
+      {name:'Smash Beef Burger',   qty:12, revenue:10200, emoji:'🍔'},
+      {name:'Fettuccine Alfredo',  qty:10, revenue:9500,  emoji:'🍝'},
+      {name:'Oreo Shake',          qty:9,  revenue:3420,  emoji:'🥤'},
+    ];
+
+    const TYPE_DATA = [
+      {label:'Dine-in',  pct:58, color:'var(--accent)', count:27},
+      {label:'Takeaway', pct:24, color:'var(--gold)',    count:11},
+      {label:'Delivery', pct:18, color:'var(--info)',    count:9},
+    ];
+
+    const PAY_DATA = [
+      {label:'Cash',  pct:52, color:'var(--success)', amt:43810},
+      {label:'Card',  pct:34, color:'var(--info)',    amt:28645},
+      {label:'Split', pct:14, color:'var(--gold)',    amt:11795},
+    ];
+
+    function renderChart() {
+      document.getElementById('salesChart').innerHTML = HOURLY.map(h => {
+        const pct = Math.round(h.v / MAX_V * 100);
+        return `<div class="bar-wrap">
+          <div class="bar-val">Rs.${Math.round(h.v/1000)}k</div>
+          <div class="bar" style="height:${pct}%;background:linear-gradient(to top,var(--accent),var(--accent2));"></div>
+          <div class="bar-label">${h.h}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderTopItems() {
+      const rankColors = ['var(--gold)','var(--fg3)','#cd7f32','var(--fg3)','var(--fg3)'];
+      document.getElementById('topItems').innerHTML = TOP_ITEMS.map((item,i) => `
+        <div class="top-item">
+          <div class="top-rank" style="background:${rankColors[i]}20;color:${rankColors[i]}">${i+1}</div>
+          <div style="font-size:20px;">${item.emoji}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:13px;">${item.name}</div>
+            <div style="font-size:11px;color:var(--fg3);">${item.qty} sold</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="text-accent bold font-num">${fmt(item.revenue)}</div>
+          </div>
+        </div>`).join('');
+    }
+
+    function renderBreakdown(data, containerId) {
+      document.getElementById(containerId).innerHTML = data.map(d => `
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:13px;font-weight:600;">${d.label}</span>
+            <span style="font-size:12px;color:var(--fg2);font-variant-numeric:tabular-nums;">${d.pct}% ${d.count?'('+d.count+' orders)':'('+fmt(d.amt)+')'}</span>
+          </div>
+          <div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:${d.pct}%;background:${d.color};border-radius:4px;transition:width .6s;"></div>
+          </div>
+        </div>`).join('');
+    }
+
+    window.onload = () => {
+      initPage('reports');
+      renderChart();
+      renderTopItems();
+      renderBreakdown(TYPE_DATA, 'typeBreakdown');
+      renderBreakdown(PAY_DATA, 'payBreakdown');
+    };
+  </script>
+</body>
+</html>

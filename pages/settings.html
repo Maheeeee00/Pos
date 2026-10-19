@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pizza Bank POS — Settings</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .settings-tabs { display:flex; gap:8px; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:0; }
+    .stab { padding:10px 18px; cursor:pointer; font-size:13px; font-weight:600; color:var(--fg3); border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .15s; }
+    .stab:hover { color:var(--fg); }
+    .stab.active { color:var(--accent2); border-bottom-color:var(--accent); }
+    .settings-section { display:none; }
+    .settings-section.active { display:block; }
+    .setting-row { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--border); }
+    .setting-row:last-child { border-bottom:none; }
+    .setting-label { font-weight:600; font-size:13px; }
+    .setting-desc { font-size:12px; color:var(--fg3); margin-top:2px; }
+    .toggle { position:relative; width:44px; height:24px; flex-shrink:0; }
+    .toggle input { opacity:0; width:0; height:0; }
+    .slider { position:absolute; inset:0; background:var(--surface3); border-radius:24px; cursor:pointer; transition:.3s; border:1px solid var(--border); }
+    .slider::before { content:''; position:absolute; height:18px; width:18px; left:2px; bottom:2px; background:var(--fg3); border-radius:50%; transition:.3s; }
+    input:checked + .slider { background:var(--accent); border-color:var(--accent); }
+    input:checked + .slider::before { transform:translateX(20px); background:#fff; }
+    .staff-card { display:flex; align-items:center; gap:12px; padding:14px; background:var(--surface2); border-radius:10px; margin-bottom:10px; border:1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+    <header class="topbar" id="topbar"></header>
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Settings</div>
+          <div class="page-sub">Configure your POS system</div>
+        </div>
+        <button class="btn btn-primary" onclick="showToast('✅ Settings saved!')">Save Changes</button>
+      </div>
+
+      <div class="settings-tabs">
+        <div class="stab active" onclick="switchTab('general',this)">General</div>
+        <div class="stab" onclick="switchTab('billing',this)">Billing & Tax</div>
+        <div class="stab" onclick="switchTab('staff',this)">Staff</div>
+        <div class="stab" onclick="switchTab('printer',this)">Printer</div>
+        <div class="stab" onclick="switchTab('notifications',this)">Notifications</div>
+      </div>
+
+      <!-- General -->
+      <div class="settings-section active" id="tab-general">
+        <div class="card">
+          <div class="card-title">Restaurant Info</div>
+          <div class="input-row">
+            <div class="input-group"><div class="input-label">Restaurant Name</div><input class="input" value="Pizza Bank Hotel"></div>
+            <div class="input-group"><div class="input-label">Branch</div><input class="input" value="Main Branch, Lahore"></div>
+          </div>
+          <div class="input-row">
+            <div class="input-group"><div class="input-label">Phone</div><input class="input" value="0300-1234567"></div>
+            <div class="input-group"><div class="input-label">Email</div><input class="input" value="info@pizzabank.pk"></div>
+          </div>
+          <div class="input-group"><div class="input-label">Address</div><input class="input" value="Plot 42, Main Boulevard, Gulberg III, Lahore"></div>
+        </div>
+        <div class="card mt-16">
+          <div class="card-title">System Preferences</div>
+          <div class="setting-row">
+            <div><div class="setting-label">Dark Mode</div><div class="setting-desc">Always use dark theme</div></div>
+            <label class="toggle"><input type="checkbox" checked onchange="showToast('🌙 Theme updated!')"><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Auto-print KOT</div><div class="setting-desc">Automatically print kitchen ticket on new order</div></div>
+            <label class="toggle"><input type="checkbox" checked onchange="showToast('🖨 Auto-print updated!')"><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Sound Alerts</div><div class="setting-desc">Play sound on new orders and order ready</div></div>
+            <label class="toggle"><input type="checkbox" checked onchange="showToast('🔔 Sound updated!')"><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Low Stock Alerts</div><div class="setting-desc">Notify when ingredient goes below minimum</div></div>
+            <label class="toggle"><input type="checkbox" onchange="showToast('📦 Stock alerts updated!')"><span class="slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Billing -->
+      <div class="settings-section" id="tab-billing">
+        <div class="card">
+          <div class="card-title">Tax & Billing</div>
+          <div class="input-row">
+            <div class="input-group"><div class="input-label">Tax Rate (%)</div><input class="input" type="number" value="5"></div>
+            <div class="input-group"><div class="input-label">Currency</div><input class="input" value="PKR (Rs.)"></div>
+          </div>
+          <div class="input-row">
+            <div class="input-group"><div class="input-label">NTN Number</div><input class="input" placeholder="1234567-8"></div>
+            <div class="input-group"><div class="input-label">STRN Number</div><input class="input" placeholder="12-34-5678-001-44"></div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Include Tax in Price</div><div class="setting-desc">Show prices inclusive of tax on menu</div></div>
+            <label class="toggle"><input type="checkbox" onchange="showToast('💰 Tax display updated!')"><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Service Charge</div><div class="setting-desc">Add 5% service charge to dine-in orders</div></div>
+            <label class="toggle"><input type="checkbox" onchange="showToast('🍽 Service charge updated!')"><span class="slider"></span></label>
+          </div>
+        </div>
+        <div class="card mt-16">
+          <div class="card-title">Receipt Settings</div>
+          <div class="input-group"><div class="input-label">Receipt Header Message</div><input class="input" value="Thank you for dining at Pizza Bank!"></div>
+          <div class="input-group"><div class="input-label">Receipt Footer Message</div><input class="input" value="Follow us on Instagram @PizzaBankPK"></div>
+        </div>
+      </div>
+
+      <!-- Staff -->
+      <div class="settings-section" id="tab-staff">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div class="card-title">Staff Members</div>
+          <button class="btn btn-primary btn-sm" onclick="showToast('👤 Add staff form opened!')">+ Add Staff</button>
+        </div>
+        <div id="staffList"></div>
+      </div>
+
+      <!-- Printer -->
+      <div class="settings-section" id="tab-printer">
+        <div class="card">
+          <div class="card-title">Printer Configuration</div>
+          <div class="input-row">
+            <div class="input-group"><div class="input-label">Printer Name</div><input class="input" value="Epson TM-T82X"></div>
+            <div class="input-group"><div class="input-label">Connection</div>
+              <select class="input"><option>USB</option><option>LAN</option><option>Bluetooth</option></select>
+            </div>
+          </div>
+          <div class="input-row">
+            <div class="input-group"><div class="input-label">Paper Width</div>
+              <select class="input"><option>80mm</option><option>58mm</option></select>
+            </div>
+            <div class="input-group"><div class="input-label">Copies per Order</div>
+              <input class="input" type="number" value="1">
+            </div>
+          </div>
+          <div style="margin-top:8px;display:flex;gap:10px;">
+            <button class="btn btn-secondary" onclick="showToast('🖨 Test print sent!')">Test Print</button>
+            <button class="btn btn-secondary" onclick="showToast('🔄 Printer reconnected!')">Reconnect</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="settings-section" id="tab-notifications">
+        <div class="card">
+          <div class="card-title">Notification Preferences</div>
+          <div class="setting-row">
+            <div><div class="setting-label">New Order Alert</div><div class="setting-desc">Beep when a new order is placed</div></div>
+            <label class="toggle"><input type="checkbox" checked onchange="showToast('Updated!')"><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Order Ready Alert</div><div class="setting-desc">Notify when kitchen marks order ready</div></div>
+            <label class="toggle"><input type="checkbox" checked onchange="showToast('Updated!')"><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Delivery Status Updates</div><div class="setting-desc">Push notification on delivery status change</div></div>
+            <label class="toggle"><input type="checkbox" onchange="showToast('Updated!')"><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Daily Sales Report</div><div class="setting-desc">Send summary at end of each shift</div></div>
+            <label class="toggle"><input type="checkbox" checked onchange="showToast('Updated!')"><span class="slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/sidebar.js"></script>
+  <script>
+    const STAFF = [
+      { name:'Zohaib Khan',   role:'Admin / Cashier', shift:'Shift A (8AM–4PM)',  pin:'****', active:true  },
+      { name:'Fatima Rao',    role:'Cashier',          shift:'Shift B (4PM–12AM)', pin:'****', active:true  },
+      { name:'Kamran Ali',    role:'Kitchen Staff',    shift:'All Shifts',         pin:'****', active:true  },
+      { name:'Sana Tariq',    role:'Delivery Manager', shift:'Shift A',            pin:'****', active:false },
+    ];
+
+    function switchTab(id, btn) {
+      document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + id).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function renderStaff() {
+      document.getElementById('staffList').innerHTML = STAFF.map(s => `
+        <div class="staff-card">
+          <div class="avatar" style="width:38px;height:38px;font-size:15px;flex-shrink:0;">${s.name.charAt(0)}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:13px;">${s.name}</div>
+            <div style="font-size:12px;color:var(--fg3);">${s.role} · ${s.shift}</div>
+          </div>
+          <span class="status ${s.active?'status-ready':'status-cancelled'}">${s.active?'Active':'Inactive'}</span>
+          <div style="display:flex;gap:6px;margin-left:12px;">
+            <button class="btn btn-sm btn-secondary" onclick="showToast('✏️ Editing ${s.name}')">Edit</button>
+            <button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="showToast('🗑 ${s.name} removed')">Remove</button>
+          </div>
+        </div>`).join('');
+    }
+
+    window.onload = () => { initPage('settings'); renderStaff(); };
+  </script>
+</body>
+</html>

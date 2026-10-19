@@ -1,95 +1,86 @@
-/* PizzaBank Hotel POS - seed data (menu, categories, default settings) */
-window.PB_DATA = (function () {
-  var cats = [
-    { id: 'pizza', name: 'Pizzas', emoji: '🍕', color: '#e5484d' },
-    { id: 'burgers', name: 'Burgers', emoji: '🍔', color: '#f59e0b' },
-    { id: 'pasta', name: 'Pasta', emoji: '🍝', color: '#eab308' },
-    { id: 'sides', name: 'Wings & Sides', emoji: '🍗', color: '#f97316' },
-    { id: 'drinks', name: 'Beverages', emoji: '🥤', color: '#0ea5e9' },
-    { id: 'desserts', name: 'Desserts', emoji: '🍰', color: '#a855f7' },
-    { id: 'deals', name: 'Deals', emoji: '🎁', color: '#10b981' }
-  ];
+/* ============================================================
+   PIZZA BANK POS — MENU & SHARED DATA
+   ============================================================ */
 
-  var n = 0;
-  function it(cat, name, desc, emoji, price, prep, stock, best) {
-    var o = { id: 'm' + (++n), cat: cat, name: name, desc: desc, emoji: emoji, prep: prep, stock: stock, best: !!best, active: true, variants: null, price: 0 };
-    if (Array.isArray(price)) {
-      o.variants = price.map(function (x) { return { n: x[0], p: x[1] }; });
-      o.price = Math.min.apply(null, price.map(function (x) { return x[1]; }));
-    } else {
-      o.price = price;
-    }
-    return o;
-  }
-  var SML = function (a, b, c) { return [['Small', a], ['Medium', b], ['Large', c]]; };
+const MENU = [
+  { id:1,  cat:'Pizza',    name:'Margherita Classic',   desc:'San Marzano tomato, fresh mozzarella, basil',         price:1200, emoji:'🍕', best:false },
+  { id:2,  cat:'Pizza',    name:'Chicken Tikka Pizza',  desc:'Spiced chicken, jalapeños, red onion, yogurt base',    price:1500, emoji:'🍕', best:true  },
+  { id:3,  cat:'Pizza',    name:'BBQ Loaded Beef',      desc:'BBQ sauce, ground beef, bell peppers, cheddar',       price:1600, emoji:'🍕', best:false },
+  { id:4,  cat:'Pizza',    name:'Peri-Peri Chicken',    desc:'Peri-peri sauce, grilled chicken, corn, cheese',      price:1550, emoji:'🍕', best:true  },
+  { id:5,  cat:'Pizza',    name:'Veggie Supreme',       desc:'Mixed peppers, mushrooms, olives, cherry tomato',     price:1100, emoji:'🍕', best:false },
+  { id:6,  cat:'Pizza',    name:'Pepperoni Feast',      desc:'Double pepperoni, mozzarella, oregano oil',           price:1700, emoji:'🍕', best:false },
+  { id:7,  cat:'Burgers',  name:'Smash Beef Burger',    desc:'Double smash patty, American cheese, pickles',        price:850,  emoji:'🍔', best:true  },
+  { id:8,  cat:'Burgers',  name:'Crispy Chicken Burger',desc:'Buttermilk fried chicken, coleslaw, sriracha mayo',   price:780,  emoji:'🍔', best:false },
+  { id:9,  cat:'Burgers',  name:'Zinger Tower',         desc:'Zinger fillet, hash brown, cheese, lettuce',          price:900,  emoji:'🍔', best:false },
+  { id:10, cat:'Pasta',    name:'Fettuccine Alfredo',   desc:'Creamy parmesan sauce, chicken strips, herbs',        price:950,  emoji:'🍝', best:true  },
+  { id:11, cat:'Pasta',    name:'Arrabiata Penne',      desc:'Spicy tomato, garlic, fresh chili, basil',            price:800,  emoji:'🍝', best:false },
+  { id:12, cat:'Pasta',    name:'Lasagna al Forno',     desc:'Beef bolognese, béchamel, mozzarella',                price:1100, emoji:'🍝', best:false },
+  { id:13, cat:'Sides',    name:'Garlic Bread',         desc:'Toasted baguette, herb butter, parsley',              price:280,  emoji:'🥖', best:false },
+  { id:14, cat:'Sides',    name:'Loaded Fries',         desc:'Cheese sauce, jalapeños, sour cream',                 price:450,  emoji:'🍟', best:true  },
+  { id:15, cat:'Sides',    name:'Caesar Salad',         desc:'Romaine, parmesan, croutons, caesar dressing',        price:520,  emoji:'🥗', best:false },
+  { id:16, cat:'Drinks',   name:'Lemonade Mint',        desc:'Fresh squeezed, crushed mint, sea salt rim',          price:220,  emoji:'🥤', best:false },
+  { id:17, cat:'Drinks',   name:'Oreo Shake',           desc:'Blended Oreo, vanilla ice cream, whipped cream',     price:380,  emoji:'🥤', best:true  },
+  { id:18, cat:'Drinks',   name:'Soft Drink',           desc:'Coke / Sprite / Fanta — 330ml chilled',              price:120,  emoji:'🥤', best:false },
+  { id:19, cat:'Desserts', name:'Chocolate Lava Cake',  desc:'Warm dark chocolate, vanilla ice cream',              price:550,  emoji:'🎂', best:true  },
+  { id:20, cat:'Desserts', name:'Tiramisu',             desc:'Mascarpone, espresso-soaked ladyfingers',             price:480,  emoji:'🍮', best:false },
+];
 
-  var menu = [
-    // Pizzas
-    it('pizza', 'Chicken Tikka Supreme Pizza', 'Charcoal grilled tikka chunks, spiced marinara, red onion, green chilies', '🍕', SML(650, 1100, 1500), 20, 80, true),
-    it('pizza', 'Rustic Pepperoni Feast Pizza', 'Artisanal beef pepperoni, crushed tomato, fresh basil, mozzarella', '🍕', SML(700, 1150, 1650), 18, 80, true),
-    it('pizza', 'Mexican Fajita Fiesta Pizza', 'Fajita chicken strips, caramelized onion, bell peppers, jalapeno', '🌶️', SML(680, 1100, 1550), 18, 70),
-    it('pizza', 'Margherita Classic Pizza', 'San Marzano sauce, fior di latte mozzarella, fresh basil', '🍕', SML(500, 850, 1200), 15, 90),
-    it('pizza', 'BBQ Chicken Ranch Pizza', 'Smoky BBQ glaze, grilled chicken, red onion, ranch drizzle', '🍕', SML(650, 1050, 1450), 18, 60),
-    it('pizza', 'Four Cheese Lovers Pizza', 'Mozzarella, cheddar, parmesan and cream cheese blend', '🧀', SML(700, 1150, 1600), 16, 60),
-    it('pizza', 'Garden Veggie Pizza', 'Mushrooms, olives, capsicum, sweet corn, tomato', '🥬', SML(550, 900, 1250), 15, 50),
-    it('pizza', 'Crown Crust Special Pizza', 'Cheese-stuffed crust with chicken, sausage and beef toppings', '👑', SML(750, 1250, 1750), 24, 40, true),
+const CATEGORIES = ['All', ...new Set(MENU.map(i => i.cat))];
 
-    // Burgers
-    it('burgers', 'Classic Angus Smashed Burger', '100% prime Angus beef patties smashed on grill, cheddar, pickles', '🍔', 920, 16, 60, true),
-    it('burgers', 'Zinger Crunch Burger', 'Crispy spicy fried chicken fillet, lettuce, house mayo', '🍔', 650, 12, 70, true),
-    it('burgers', 'Double Patty Beast', 'Two beef patties, double cheese, caramelized onion, smoky sauce', '🍔', 1150, 18, 40),
-    it('burgers', 'Grilled Chicken Burger', 'Herb-marinated grilled chicken breast, avocado spread', '🍔', 720, 14, 45),
-    it('burgers', 'Mushroom Swiss Burger', 'Beef patty, sauteed mushrooms, Swiss cheese, garlic aioli', '🍄', 880, 16, 35),
+const TABLES = [
+  { id:'T1', status:'free' }, { id:'T2', status:'occupied' },
+  { id:'T3', status:'free' }, { id:'T4', status:'occupied' },
+  { id:'T5', status:'free' }, { id:'T6', status:'occupied' },
+  { id:'T7', status:'free' }, { id:'T8', status:'free' },
+];
 
-    // Pasta
-    it('pasta', 'Creamy Fettuccine Alfredo', 'Hand-rolled fettuccine tossed in rich garlic parmesan cream', '🍝', 1250, 18, 50, true),
-    it('pasta', 'Penne Arrabbiata', 'Penne in spicy tomato and garlic sauce, fresh parsley', '🍝', 980, 15, 50),
-    it('pasta', 'Chicken Lasagna', 'Layered pasta sheets, chicken ragu, bechamel, baked mozzarella', '🍝', 1350, 22, 30),
-    it('pasta', 'Baked Mac & Cheese', 'Three-cheese sauce, crispy breadcrumb crown', '🧀', 890, 15, 40),
+const SAMPLE_ORDERS = [
+  { id:'#1042', table:'T2', type:'Dine-in',  items:3, total:3850, status:'preparing', time:'10:15 AM' },
+  { id:'#1041', table:'T4', type:'Dine-in',  items:5, total:6200, status:'ready',     time:'10:08 AM' },
+  { id:'#1040', table:'-',  type:'Delivery', items:2, total:2100, status:'pending',   time:'10:02 AM' },
+  { id:'#1039', table:'T6', type:'Dine-in',  items:4, total:4750, status:'delivered', time:'09:48 AM' },
+  { id:'#1038', table:'-',  type:'Takeaway', items:1, total:1500, status:'delivered', time:'09:30 AM' },
+];
 
-    // Wings & Sides
-    it('sides', 'Peri-Peri Glazed Chicken Wings', 'Flame-grilled wings glazed in house peri-peri sauce', '🍗', [['6 pcs', 690], ['12 pcs', 1250]], 14, 90, true),
-    it('sides', 'Loaded Cheese Fries', 'Crispy fries, cheese sauce, jalapeno, chicken bits', '🍟', 520, 10, 100),
-    it('sides', 'Garlic Bread with Cheese', 'Toasted baguette, garlic butter, melted mozzarella', '🥖', 420, 8, 100),
-    it('sides', 'Crispy Onion Rings', 'Golden beer-battered onion rings with dip', '🧅', 350, 8, 80),
-    it('sides', 'Chicken Nuggets', 'Crunchy chicken nuggets with honey mustard', '🍗', [['6 pcs', 480], ['12 pcs', 880]], 10, 90),
+const INVENTORY = [
+  { id:1, name:'Mozzarella Cheese', unit:'kg',  qty:12.5, min:5,  cost:1200 },
+  { id:2, name:'Pizza Dough',       unit:'kg',  qty:8.0,  min:4,  cost:180  },
+  { id:3, name:'Tomato Sauce',      unit:'ltr', qty:15.0, min:6,  cost:220  },
+  { id:4, name:'Chicken Breast',    unit:'kg',  qty:6.5,  min:3,  cost:650  },
+  { id:5, name:'Beef Mince',        unit:'kg',  qty:4.0,  min:3,  cost:800  },
+  { id:6, name:'Pepperoni',         unit:'kg',  qty:2.5,  min:2,  cost:950  },
+  { id:7, name:'All-purpose Flour', unit:'kg',  qty:25.0, min:10, cost:95   },
+  { id:8, name:'Olive Oil',         unit:'ltr', qty:3.0,  min:2,  cost:550  },
+  { id:9, name:'Soft Drinks (cans)',unit:'pcs', qty:48,   min:24, cost:60   },
+  { id:10,name:'Ice Cream (tub)',   unit:'ltr', qty:4.0,  min:2,  cost:480  },
+];
 
-    // Beverages
-    it('drinks', 'Belgian Chocolate Fudge Shake', 'Thick hand-made shake with Belgian chocolate fudge', '🥛', 480, 6, 60, true),
-    it('drinks', 'Fresh Mint Lemonade Cooler', 'Crushed mint, fresh lemon, sparkling soda', '🍋', 320, 5, 120, true),
-    it('drinks', 'Blue Lagoon Mojito', 'Blue curacao syrup, lime, mint, soda (non-alcoholic)', '🧊', 380, 5, 100),
-    it('drinks', 'Iced Latte', 'Double espresso over milk and ice', '☕', 450, 5, 80),
-    it('drinks', 'Mango Shake', 'Seasonal mango pulp blended with cold milk', '🥭', 420, 6, 60),
-    it('drinks', 'Soft Drink', 'Chilled Pepsi / 7Up / Mirinda', '🥤', [['345 ml', 120], ['1.5 L', 260]], 2, 300),
-    it('drinks', 'Mineral Water', '500 ml bottled water', '💧', 80, 1, 300),
+const CUSTOMERS = [
+  { id:1, name:'Ahmed Raza',     phone:'0300-1234567', visits:12, spent:28400, last:'Today' },
+  { id:2, name:'Sara Malik',     phone:'0321-9876543', visits:8,  spent:19750, last:'Yesterday' },
+  { id:3, name:'Bilal Khan',     phone:'0333-5551234', visits:5,  spent:12300, last:'3 days ago' },
+  { id:4, name:'Nadia Hussain',  phone:'0345-7778889', visits:20, spent:51200, last:'Today' },
+  { id:5, name:'Usman Tariq',    phone:'0311-2223334', visits:3,  spent:7100,  last:'1 week ago' },
+];
 
-    // Desserts
-    it('desserts', 'Molten Chocolate Lava Cake', 'Warm cake with a flowing dark chocolate center', '🍫', 550, 12, 40, true),
-    it('desserts', 'New York Cheesecake', 'Baked cheesecake with berry compote', '🍰', 620, 5, 30),
-    it('desserts', 'Brownie with Ice Cream', 'Walnut brownie, vanilla ice cream, chocolate drizzle', '🍨', 480, 8, 50),
-    it('desserts', 'Gulab Jamun (2 pcs)', 'Warm milk dumplings in cardamom syrup', '🍮', 300, 4, 60),
+function fmt(n) { return 'Rs. ' + n.toLocaleString(); }
 
-    // Deals
-    it('deals', 'Solo Deal', '1 small pizza + fries + soft drink', '🎁', 1100, 20, 60),
-    it('deals', 'Student Combo', 'Zinger burger + fries + soft drink', '🎓', 990, 14, 60, true),
-    it('deals', 'Couple Deal', '2 medium pizzas + garlic bread + 2 soft drinks', '💑', 2350, 24, 40),
-    it('deals', 'Family Feast', '1 large pizza + 6 wings + fries + 1.5 L drink', '👨‍👩‍👧‍👦', 2999, 26, 30, true),
-    it('deals', 'Party Box', '3 large pizzas + 12 wings + 2 x 1.5 L drinks + dessert', '🎉', 6499, 35, 15)
-  ];
+function showToast(msg, err=false) {
+  let t = document.getElementById('toast');
+  if (!t) { t = document.createElement('div'); t.id='toast'; t.className='toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.style.background = err ? 'var(--danger)' : 'var(--success)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
 
-  var settings = {
-    name: 'PizzaBank Hotel',
-    tagline: 'Pizza · Grill · Fine Dining',
-    address: 'Main GT Rd, Muhallah Peer Abdullah Shah Ghakhar, Gakhar Mandi 52200',
-    phone: '',
-    currency: 'Rs.',
-    taxRate: 5,
-    serviceRate: 5,
-    deliveryFee: 150,
-    tables: 12,
-    lowStock: 10,
-    footer: 'Thank you for dining with us!'
-  };
+function updateClock() {
+  const el = document.getElementById('clock');
+  if (!el) return;
+  const now = new Date();
+  const t = now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+  const d = now.toLocaleDateString('en-PK', { weekday:'short', month:'short', day:'numeric' });
+  el.innerHTML = `<strong>${t}</strong><br>${d}`;
+}
 
-  return { categories: cats, menu: menu, settings: settings };
-})();
+function initClock() { updateClock(); setInterval(updateClock, 1000); }
