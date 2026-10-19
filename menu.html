@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pizza Bank POS — Menu Management</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-root">
+    <header class="topbar" id="topbar"></header>
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Menu Management</div>
+          <div class="page-sub">Add, edit and manage menu items</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div class="search-box" style="width:200px;">
+            <input type="text" placeholder="Search items…" oninput="filterMenu(this.value)">
+          </div>
+          <button class="btn btn-primary" onclick="openAddModal()">+ Add Item</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;" id="menuCats"></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Bestseller</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="menuBody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay" id="itemModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal" style="width:480px;">
+      <h3 id="itemModalTitle">Add Menu Item</h3>
+      <div class="input-row">
+        <div class="input-group"><div class="input-label">Item Name</div><input class="input" id="iName" placeholder="e.g. BBQ Chicken Pizza"></div>
+        <div class="input-group"><div class="input-label">Category</div>
+          <select class="input" id="iCat">
+            <option>Pizza</option><option>Burgers</option><option>Pasta</option>
+            <option>Sides</option><option>Drinks</option><option>Desserts</option>
+          </select>
+        </div>
+      </div>
+      <div class="input-group"><div class="input-label">Description</div><input class="input" id="iDesc" placeholder="Short description of the item"></div>
+      <div class="input-row">
+        <div class="input-group"><div class="input-label">Price (Rs.)</div><input class="input" id="iPrice" type="number" placeholder="1200"></div>
+        <div class="input-group"><div class="input-label">Emoji Icon</div><input class="input" id="iEmoji" placeholder="🍕" style="font-size:20px;"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <input type="checkbox" id="iBest" style="width:16px;height:16px;accent-color:var(--gold);">
+        <label for="iBest" style="font-size:13px;color:var(--fg2);">Mark as Bestseller</label>
+      </div>
+      <div class="modal-btns">
+        <button class="modal-btn modal-cancel" onclick="document.getElementById('itemModal').classList.remove('open')">Cancel</button>
+        <button class="modal-btn modal-confirm" onclick="saveItem()">Save Item</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script>
+    let menuData = [...MENU];
+    let menuFilter = 'All';
+    let menuSearch = '';
+
+    function filterMenu(q) { menuSearch = q; renderMenuTable(); }
+
+    function setMenuCat(cat, btn) {
+      menuFilter = cat;
+      document.querySelectorAll('#menuCats .cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderMenuTable();
+    }
+
+    function renderMenuCats() {
+      document.getElementById('menuCats').innerHTML = ['All',...new Set(menuData.map(i=>i.cat))].map(c =>
+        `<button class="cat-btn ${c==='All'?'active':''}" onclick="setMenuCat('${c}',this)">${c}</button>`
+      ).join('');
+    }
+
+    function renderMenuTable() {
+      let items = menuData;
+      if (menuFilter !== 'All') items = items.filter(i => i.cat === menuFilter);
+      if (menuSearch) items = items.filter(i => i.name.toLowerCase().includes(menuSearch.toLowerCase()));
+
+      document.getElementById('menuBody').innerHTML = items.map(item => `
+        <tr>
+          <td><strong>${item.emoji} ${item.name}</strong><br><span class="text-muted" style="font-size:11px;">${item.desc}</span></td>
+          <td>${item.cat}</td>
+          <td class="text-accent font-num"><strong>${fmt(item.price)}</strong></td>
+          <td>${item.best ? '<span class="text-gold bold">⭐ Yes</span>' : '<span class="text-muted">—</span>'}</td>
+          <td><span class="status status-ready">Active</span></td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap;padding-top:10px;">
+            <button class="btn btn-sm btn-secondary" onclick="editItem(${item.id})">Edit</button>
+            <button class="btn btn-sm" style="background:var(--warning);color:#000;" onclick="toggleBest(${item.id})">${item.best?'★ Unmark':'☆ Bestseller'}</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">Remove</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    function openAddModal() {
+      document.getElementById('itemModalTitle').textContent = 'Add Menu Item';
+      document.getElementById('iName').value = '';
+      document.getElementById('iDesc').value = '';
+      document.getElementById('iPrice').value = '';
+      document.getElementById('iEmoji').value = '';
+      document.getElementById('iBest').checked = false;
+      document.getElementById('itemModal').classList.add('open');
+    }
+
+    function editItem(id) {
+      const item = menuData.find(i=>i.id===id);
+      document.getElementById('itemModalTitle').textContent = 'Edit: ' + item.name;
+      document.getElementById('iName').value = item.name;
+      document.getElementById('iDesc').value = item.desc;
+      document.getElementById('iPrice').value = item.price;
+      document.getElementById('iEmoji').value = item.emoji;
+      document.getElementById('iBest').checked = item.best;
+      document.getElementById('iCat').value = item.cat;
+      document.getElementById('itemModal').classList.add('open');
+    }
+
+    function saveItem() {
+      const name = document.getElementById('iName').value.trim();
+      if (!name) { showToast('❌ Name is required!', true); return; }
+      showToast('✅ Item saved successfully!');
+      document.getElementById('itemModal').classList.remove('open');
+      renderMenuTable();
+    }
+
+    function toggleBest(id) {
+      const item = menuData.find(i=>i.id===id);
+      item.best = !item.best;
+      showToast(item.best ? '⭐ Marked as bestseller!' : '✅ Removed from bestsellers');
+      renderMenuTable();
+    }
+
+    function deleteItem(id) {
+      menuData = menuData.filter(i=>i.id!==id);
+      showToast('🗑 Item removed');
+      renderMenuTable();
+      renderMenuCats();
+    }
+
+    window.onload = () => { initPage('menu'); renderMenuCats(); renderMenuTable(); };
+  </script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pizza Bank POS — Orders</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-root">
+    <header class="topbar" id="topbar"></header>
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Orders</div>
+          <div class="page-sub">All active and past orders</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div class="search-box" style="width:220px;">
+            <input type="text" id="orderSearch" placeholder="Search orders…" oninput="filterOrders(this.value)">
+          </div>
+          <button class="btn btn-primary" onclick="window.location.href='../index.html'">+ New Order</button>
+        </div>
+      </div>
+
+      <!-- Filter tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+        <button class="cat-btn active" onclick="setFilter('all',this)">All Orders</button>
+        <button class="cat-btn" onclick="setFilter('pending',this)">⏳ Pending</button>
+        <button class="cat-btn" onclick="setFilter('preparing',this)">🍳 Preparing</button>
+        <button class="cat-btn" onclick="setFilter('ready',this)">✅ Ready</button>
+        <button class="cat-btn" onclick="setFilter('delivered',this)">📦 Delivered</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Table</th>
+              <th>Type</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersBody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Order Detail Modal -->
+  <div class="modal-overlay" id="detailModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal">
+      <h3 id="modalOrderId">Order #1042</h3>
+      <div id="modalBody"></div>
+      <div class="modal-btns">
+        <button class="modal-btn modal-cancel" onclick="document.getElementById('detailModal').classList.remove('open')">Close</button>
+        <button class="modal-btn modal-confirm" onclick="showToast('✅ Status updated!');document.getElementById('detailModal').classList.remove('open')">Update Status</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script>
+    const ALL_ORDERS = [
+      ...SAMPLE_ORDERS,
+      { id:'#1037', table:'T3', type:'Dine-in',  items:6, total:7200, status:'delivered', time:'09:10 AM' },
+      { id:'#1036', table:'-',  type:'Delivery', items:3, total:3900, status:'delivered', time:'08:55 AM' },
+      { id:'#1035', table:'T1', type:'Dine-in',  items:2, total:2300, status:'cancelled', time:'08:40 AM' },
+    ];
+
+    let currentFilter = 'all';
+
+    function setFilter(f, btn) {
+      currentFilter = f;
+      document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderOrders();
+    }
+
+    function filterOrders(q) {
+      renderOrders(q);
+    }
+
+    function renderOrders(q='') {
+      let orders = ALL_ORDERS;
+      if (currentFilter !== 'all') orders = orders.filter(o => o.status === currentFilter);
+      if (q) orders = orders.filter(o => o.id.includes(q) || o.table.toLowerCase().includes(q.toLowerCase()));
+
+      document.getElementById('ordersBody').innerHTML = orders.map(o => `
+        <tr>
+          <td><strong>${o.id}</strong></td>
+          <td>${o.table}</td>
+          <td>${o.type}</td>
+          <td>${o.items} items</td>
+          <td class="text-accent font-num"><strong>${fmt(o.total)}</strong></td>
+          <td class="text-muted">${o.time}</td>
+          <td><span class="status status-${o.status}">${o.status.charAt(0).toUpperCase()+o.status.slice(1)}</span></td>
+          <td>
+            <button class="btn btn-sm btn-secondary" onclick="viewOrder('${o.id}','${o.table}','${o.type}','${o.total}','${o.status}')">View</button>
+            ${o.status==='ready'?`<button class="btn btn-sm btn-success" style="margin-left:6px" onclick="showToast('📦 Marked delivered!')">Deliver</button>`:''}
+          </td>
+        </tr>`).join('');
+    }
+
+    function viewOrder(id, table, type, total, status) {
+      document.getElementById('modalOrderId').textContent = 'Order ' + id;
+      document.getElementById('modalBody').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div><div class="text-muted" style="font-size:11px;margin-bottom:4px;">TABLE</div><strong>${table}</strong></div>
+          <div><div class="text-muted" style="font-size:11px;margin-bottom:4px;">TYPE</div><strong>${type}</strong></div>
+          <div><div class="text-muted" style="font-size:11px;margin-bottom:4px;">TOTAL</div><strong class="text-accent">${fmt(Number(total))}</strong></div>
+          <div><div class="text-muted" style="font-size:11px;margin-bottom:4px;">STATUS</div><span class="status status-${status}">${status}</span></div>
+        </div>
+        <div style="margin-bottom:12px;font-weight:600;font-size:13px;">Update Status</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-sm" style="background:var(--warning);color:#000" onclick="showToast('Updated to Pending')">⏳ Pending</button>
+          <button class="btn btn-sm" style="background:var(--info);color:#fff" onclick="showToast('Updated to Preparing')">🍳 Preparing</button>
+          <button class="btn btn-sm btn-success" onclick="showToast('Updated to Ready')">✅ Ready</button>
+          <button class="btn btn-sm" style="background:var(--fg3);color:#fff" onclick="showToast('Updated to Delivered')">📦 Delivered</button>
+          <button class="btn btn-sm btn-danger" onclick="showToast('Order cancelled!')">❌ Cancel</button>
+        </div>`;
+      document.getElementById('detailModal').classList.add('open');
+    }
+
+    window.onload = () => { initPage('orders'); renderOrders(); };
+  </script>
+</body>
+</html>

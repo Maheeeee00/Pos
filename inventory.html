@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pizza Bank POS — Inventory</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .stock-bar-wrap { width:100px; height:8px; background:var(--surface3); border-radius:4px; overflow:hidden; }
+    .stock-bar { height:100%; border-radius:4px; transition:width .3s; }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+    <header class="topbar" id="topbar"></header>
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Inventory</div>
+          <div class="page-sub">Stock levels and ingredient management</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-secondary" onclick="showToast('📊 Stock report exported!')">Export</button>
+          <button class="btn btn-primary" onclick="openStockModal()">+ Add Stock</button>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-label">Total Items</div><div class="stat-value">10</div></div>
+        <div class="stat-card"><div class="stat-label">Low Stock</div><div class="stat-value" style="color:var(--warning);">2</div></div>
+        <div class="stat-card"><div class="stat-label">Out of Stock</div><div class="stat-value" style="color:var(--danger);">0</div></div>
+        <div class="stat-card"><div class="stat-label">Stock Value</div><div class="stat-value" style="font-size:18px;">Rs. 48,200</div></div>
+      </div>
+
+      <div class="table-wrap mt-16">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Ingredient</th>
+              <th>Unit</th>
+              <th>In Stock</th>
+              <th>Min Required</th>
+              <th>Stock Level</th>
+              <th>Unit Cost</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="inventoryBody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <!-- Add Stock Modal -->
+  <div class="modal-overlay" id="stockModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal">
+      <h3>Add / Restock Item</h3>
+      <div class="input-group"><div class="input-label">Ingredient Name</div><input class="input" placeholder="e.g. Mozzarella Cheese"></div>
+      <div class="input-row">
+        <div class="input-group"><div class="input-label">Quantity</div><input class="input" type="number" placeholder="10"></div>
+        <div class="input-group"><div class="input-label">Unit</div>
+          <select class="input"><option>kg</option><option>ltr</option><option>pcs</option><option>box</option></select>
+        </div>
+      </div>
+      <div class="input-row">
+        <div class="input-group"><div class="input-label">Min Required</div><input class="input" type="number" placeholder="3"></div>
+        <div class="input-group"><div class="input-label">Unit Cost (Rs.)</div><input class="input" type="number" placeholder="500"></div>
+      </div>
+      <div class="modal-btns">
+        <button class="modal-btn modal-cancel" onclick="document.getElementById('stockModal').classList.remove('open')">Cancel</button>
+        <button class="modal-btn modal-confirm" onclick="showToast('✅ Stock updated!');document.getElementById('stockModal').classList.remove('open')">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script>
+    let invData = [...INVENTORY];
+
+    function stockColor(qty, min) {
+      const pct = qty / (min * 3);
+      if (pct < 0.5) return 'var(--danger)';
+      if (pct < 1)   return 'var(--warning)';
+      return 'var(--success)';
+    }
+
+    function openStockModal() {
+      document.getElementById('stockModal').classList.add('open');
+    }
+
+    function restockItem(id) {
+      const item = invData.find(i=>i.id===id);
+      item.qty += item.min * 2;
+      showToast('📦 ' + item.name + ' restocked!');
+      renderInventory();
+    }
+
+    function renderInventory() {
+      document.getElementById('inventoryBody').innerHTML = invData.map(item => {
+        const pct = Math.min(100, Math.round(item.qty / (item.min * 3) * 100));
+        const color = stockColor(item.qty, item.min);
+        const isLow = item.qty <= item.min;
+        return `
+        <tr>
+          <td class="text-muted">${item.id}</td>
+          <td>
+            <strong>${item.name}</strong>
+            ${isLow ? '<span class="badge-pill" style="background:var(--warning);margin-left:6px;font-size:9px;">LOW</span>' : ''}
+          </td>
+          <td class="text-muted">${item.unit}</td>
+          <td class="font-num"><strong style="color:${color}">${item.qty}</strong></td>
+          <td class="font-num text-muted">${item.min}</td>
+          <td>
+            <div class="stock-bar-wrap">
+              <div class="stock-bar" style="width:${pct}%;background:${color};"></div>
+            </div>
+            <div style="font-size:10px;color:var(--fg3);margin-top:3px;">${pct}%</div>
+          </td>
+          <td class="font-num">${fmt(item.cost)}</td>
+          <td style="display:flex;gap:6px;">
+            <button class="btn btn-sm btn-secondary" onclick="restockItem(${item.id})">+ Restock</button>
+            <button class="btn btn-sm btn-secondary" onclick="showToast('✏️ Editing...')">Edit</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    window.onload = () => { initPage('inventory'); renderInventory(); };
+  </script>
+</body>
+</html>
